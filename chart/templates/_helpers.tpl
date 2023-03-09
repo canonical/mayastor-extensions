@@ -117,3 +117,13 @@ Usage:
     {{ $product := .Files.Get "product.yaml" | fromYaml }}
     {{- print $product.domain -}}
 {{- end -}}
+
+
+{{/* Generate the etcd endpoint that mayastor will use */}}
+{{- define "etcdEndpoint" -}}
+    {{- if or .Values.etcd.enabled (not .Values.etcd.externalEtcdEndpoint) }}
+        {{- .Release.Name }}-etcd
+    {{- else }}
+        {{- .Values.etcd.externalEtcdEndpoint }}
+    {{- end }}
+{{- end }}

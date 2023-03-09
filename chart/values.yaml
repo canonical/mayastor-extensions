@@ -25,6 +25,10 @@ earlyEvictionTolerations:
     operator: Exists
     tolerationSeconds: 5
 
+# -- Create default mayastor storage class
+storageClass:
+  create: true
+
 base:
   # -- Request timeout for rest & core agents
   default_req_timeout: 5s
@@ -32,27 +36,29 @@ base:
   cache_poll_period: 30s
   # -- Silence specific module components
   logSilenceLevel:
+  # -- Busybox image
+  busyboxImage: "busybox:latest"
   initContainers:
     enabled: true
     containers:
       - name: agent-core-grpc-probe
-        image: busybox:latest
+        image: "{{ .Values.base.busyboxImage }}"
         command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ .Release.Name }}-agent-core 50051; do date; echo "Waiting for agent-core-grpc services..."; sleep 1; done;']
       - name: etcd-probe
-        image: busybox:latest
-        command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ .Release.Name }}-etcd {{ .Values.etcd.service.port }}; do date; echo "Waiting for etcd..."; sleep 1; done;']
+        image: "{{ .Values.base.busyboxImage }}"
+        command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ include "etcdEndpoint" . }} {{ .Values.etcd.service.port }}; do date; echo "Waiting for etcd..."; sleep 1; done;']
   initHaNodeContainers:
     enabled: true
     containers:
       - name: agent-cluster-grpc-probe
-        image: busybox:latest
+        image: "{{ .Values.base.busyboxImage }}"
         command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ .Release.Name }}-agent-core 50052; do date; echo "Waiting for agent-cluster-grpc services..."; sleep 1; done;']
   initCoreContainers:
     enabled: true
     containers:
       - name: etcd-probe
-        image: busybox:latest
-        command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ .Release.Name }}-etcd {{ .Values.etcd.service.port }}; do date; echo "Waiting for etcd..."; sleep 1; done;']
+        image: "{{ .Values.base.busyboxImage }}"
+        command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ include "etcdEndpoint" . }} {{ .Values.etcd.service.port }}; do date; echo "Waiting for etcd..."; sleep 1; done;']
   # docker-secrets required to pull images if the container registry from image.Registry is protected
   imagePullSecrets:
     # -- Enable imagePullSecrets for pulling our container images
@@ -77,13 +83,13 @@ base:
       port: 6831
       initContainer:
         - name: jaeger-probe
-          image: busybox:latest
+          image: "{{ .Values.base.busyboxImage }}"
           command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 -u {{.Values.base.jaeger.agent.name}} {{.Values.base.jaeger.agent.port}}; do date; echo "Waiting for jaeger..."; sleep 1; done;']
   initRestContainer:
     enabled: true
     initContainer:
       - name: api-rest-probe
-        image: busybox:latest
+        image: "{{ .Values.base.busyboxImage }}"
         command: ['sh', '-c', 'trap "exit 1" TERM; until nc -vzw 5 {{ .Release.Name }}-api-rest 8081; do date; echo "Waiting for REST API endpoint to become available"; sleep 1; done;']
 
 operators:
@@ -101,6 +107,10 @@ operators:
         cpu: "50m"
         # -- Memory requests for diskpool operator
         memory: "16Mi"
+    # Disable device validation for DiskPool creation
+    disableDeviceValidation: false
+    # Configure number of retries for DiskPool creation
+    # numRetries:
 
 jaeger-operator:
   # Name of jaeger operator
@@ -286,8 +296,27 @@ io_engine:
       memory: "1Gi"
       # -- Hugepage size available on the nodes
       hugepages2Mi: "2Gi"
+  # Config location on the local node
+  configLocation: "/var/local/io-engine/"
+  # -- ServiceAccount for the io-engine
+  serviceAccountName: ""
+  # -- Affinity for the io-engine
+  affinity: {}
+  # -- Extra initContainers for the io-engine
+  extraInitContainers: []
+  # -- Extra volumes for the io-engine
+  extraVolumes: []
+  # -- Extra volume mounts for the io-engine
+  extraVolumeMounts: []
 
 etcd:
+  # Set to false to not deploy the bitnami chart
+  enabled: true
+
+  # Set the endpoint mayastor will use to access etcd.
+  # This only takes effect if 'etcd.enabled' is false.
+  externalEtcdEndpoint: ""
+
   # Pod labels; okay to remove the openebs logging label if required
   podLabels:
     app: etcd

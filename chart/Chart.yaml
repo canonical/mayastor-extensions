@@ -28,6 +28,7 @@ dependencies:
   - name: etcd
     repository: https://charts.bitnami.com/bitnami
     version: 8.6.0
+    condition: etcd.enabled
   - name: jaeger-operator
     version: 2.25.0
     repository: https://jaegertracing.github.io/helm-charts

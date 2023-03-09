@@ -14,6 +14,9 @@ spec:
   updateStrategy:
     type: OnDelete
   minReadySeconds: 10
+  {{- if .Values.io_engine.serviceAccountName }}
+  serviceAccountName: {{ .Values.serviceAccountName | quote }}
+  {{- end }}
   template:
     metadata:
       labels:
@@ -28,8 +31,12 @@ spec:
       # To resolve services in the namespace
       dnsPolicy: ClusterFirstWithHostNet
       nodeSelector: {{- .Values.io_engine.nodeSelector | toYaml | nindent 8 }}
+      affinity: {{ .Values.io_engine.affinity | toYaml | nindent 8 }}
       initContainers:
         {{- include "base_init_containers" . }}
+        {{- if .Values.io_engine.extraInitContainers -}}
+        {{ tpl (.Values.io_engine.extraInitContainers | toYaml) . | nindent 8 }}
+        {{- end }}
       containers:
       {{- if .Values.base.metrics.enabled }}
       - name: metrics-exporter-pool
@@ -86,7 +93,7 @@ spec:
         - "-Rhttps://{{ .Release.Name }}-agent-core:50051"
         - "-y/var/local/io-engine/config.yaml"
         - "-l{{ include "cpuFlag" . }}"
-        - "-p={{ .Release.Name }}-etcd:{{ .Values.etcd.service.port }}"{{ if .Values.io_engine.target.nvmf.ptpl }}
+        - "-p={{ include "etcdEndpoint" . }}:{{ .Values.etcd.service.port }}"{{ if .Values.io_engine.target.nvmf.ptpl }}
         - "--ptpl-dir=/var/local/io-engine/ptpl/"{{ end }}
         - "--api-versions={{ .Values.io_engine.api }}"{{ if .Values.io_engine.target.nvmf.iface }}
         - "-T={{ .Values.io_engine.target.nvmf.iface }}"{{ end }}{{ if .Values.io_engine.envcontext }}
@@ -107,6 +114,9 @@ spec:
           mountPath: /var/local/io-engine/
         - name: hugepage
           mountPath: /dev/hugepages
+        {{- if .Values.io_engine.extraVolumeMounts -}}
+        {{ .Values.io_engine.extraVolumeMounts | toYaml | nindent 6 }}
+        {{- end }}
         resources:
           limits:
             cpu: {{ .Values.io_engine.resources.limits.cpu | default .Values.io_engine.cpuCount | quote }}
@@ -138,5 +148,8 @@ spec:
           medium: HugePages
       - name: configlocation
         hostPath:
-          path: /var/local/io-engine/
+          path: {{ .Values.io_engine.configLocation | quote }}
           type: DirectoryOrCreate
+      {{- if .Values.io_engine.extraVolumes -}}
+      {{ .Values.io_engine.extraVolumes | toYaml | nindent 6 }}
+      {{- end }}
