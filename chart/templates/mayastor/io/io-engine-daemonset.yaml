@@ -14,9 +14,6 @@ spec:
   updateStrategy:
     type: OnDelete
   minReadySeconds: 10
-  {{- if .Values.io_engine.serviceAccountName }}
-  serviceAccountName: {{ .Values.serviceAccountName | quote }}
-  {{- end }}
   template:
     metadata:
       labels:
@@ -25,6 +22,9 @@ spec:
         {{ include "label_prefix" . }}/version: {{ .Chart.Version }}
         {{ include "label_prefix" . }}/logging: "true"
     spec:
+      {{- if .Values.io_engine.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName | quote }}
+      {{- end }}
       imagePullSecrets:
         {{- include "base_pull_secrets" . }}
       hostNetwork: true
