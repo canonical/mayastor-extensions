@@ -115,7 +115,7 @@ spec:
         - name: hugepage
           mountPath: /dev/hugepages
         {{- if .Values.io_engine.extraVolumeMounts -}}
-        {{ .Values.io_engine.extraVolumeMounts | toYaml | nindent 6 }}
+        {{ .Values.io_engine.extraVolumeMounts | toYaml | nindent 8 }}
         {{- end }}
         resources:
           limits:
