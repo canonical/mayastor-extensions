@@ -64,6 +64,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+{{- if .Values.agents.ha.enabled }}
         - name: agent-ha-cluster
           resources:
             limits:
@@ -96,3 +97,4 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+{{- end }}
