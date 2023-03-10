@@ -12,8 +12,8 @@ image:
 # ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 # Note that if multi-arch images support 'kubernetes.io/arch: amd64'
 # should be removed and set 'nodeSelector' to empty '{}' as default value.
-nodeSelector:
-  kubernetes.io/arch: amd64
+# nodeSelector:
+#   kubernetes.io/arch: amd64
 
 earlyEvictionTolerations:
   - effect: NoExecute
@@ -278,9 +278,9 @@ io_engine:
   # -- Node selectors to designate storage nodes for diskpool creation
   # Note that if multi-arch images support 'kubernetes.io/arch: amd64'
   # should be removed.
-  nodeSelector:
-    openebs.io/engine: mayastor
-    kubernetes.io/arch: amd64
+  # nodeSelector:
+  #   openebs.io/engine: mayastor
+  #   kubernetes.io/arch: amd64
   resources:
     limits:
       # -- Cpu limits for the io-engine
